@@ -1,0 +1,274 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Danny Lin <danny@kdrag0n.dev>
+Date: Wed, 7 Oct 2020 00:24:54 -0700
+Subject: [PATCH] squash commit of safetynet and play integrity spoofing
+
+Author: Danny Lin <danny@kdrag0n.dev>
+Date:   Wed Oct 7 00:24:54 2020 -0700
+
+    init: Set properties to make SafetyNet pass
+
+    This is a squash of the following commits.
+
+      Author: Danny Lin <danny@kdrag0n.dev>
+      Date:   Wed Oct 7 00:24:54 2020 -0700
+
+          init: Set properties to make SafetyNet pass
+
+          Google's SafetyNet integrity checks will check the values of these
+          properties when performing basic attestation. Setting fake values helps
+          us pass basic SafetyNet with no Magisk Hide or kernel patches necessary.
+
+          Note that these properties need to be set very early, before parsing the
+          kernel command-line, as they are read-only properties that the bootloader
+          sets using androidboot kernel arguments. The bootloader's real values
+          cause SafetyNet to fail with an unlocked bootloader and/or custom
+          software because the verified boot chain is broken in that case.
+
+      Author: Jarl-Penguin <jarlpenguin@outlook.com>
+      Date:   Wed Jun 16 11:28:46 2021 +0000
+
+          init: Don't spoof SafetyNet properties in recovery mode
+
+Author: Alex Naidis <alex.naidis@linux.com>
+Date:   Sun Apr 9 01:29:27 2017 +0200
+
+    init: Weaken property override security for the init extension
+
+    Sometimes we need to override ro.* properties by using our vendor init
+    extension.
+
+    Previously there was a security check which was blocking that.
+    To resolve the issue, we need to weaken the security check during the
+    execution of our vendor init extension.
+
+    This is safe because the vendor init extension gets executed as part of init
+    construction and it is considered a trusted system component.
+
+Author: spezi77 <spezi7713@gmx.net>
+Date:   Fri Jan 15 20:22:02 2021 +0100
+
+    init: Add more properties to spoof.
+
+Author: jhenrique09 <jhsv09@gmail.com>
+Date:   Tue Aug 23 17:11:54 2022 -0300
+
+    init: Spoof more props
+
+Author: Pranav Vashi <neobuddy89@gmail.com>
+Date:   Fri Oct 22 04:07:18 2021 +0530
+
+    init: Do not set safety net props for ENG builds
+
+Author: chiteroman <chiteroman@users.noreply.github.com>
+Date:   Wed Jul 10 01:49:22 2024 -0400
+
+    init: Spoof additional props
+
+Author: rmp22 <195054967+rmp22@users.noreply.github.com>
+Date:   Thu Oct 23 17:55:24 2025 +0800
+
+    init: Fix and improve safetynet property spoofing
+
+    InitPropertySet cant write ro properties due to permission checks
+
+    command
+    adb shell "getprop | grep -E 'ro.boot.flash.locked|ro.boot.vbmeta.device_state|ro.boot.verifiedbootstate|ro.boot.veritymode|ro.boot.warranty_bit|ro.warranty_bit|ro.debuggable|ro.force.debuggable|ro.adb.secure|ro.secure|ro.bootimage.build.type|ro.build.type|ro.build.keys|ro.build.tags|ro.system.build.tags|ro.product.build.type|ro.odm.build.type|ro.system.build.type|ro.system_ext.build.type|ro.vendor.build.type|ro.vendor_dlkm.build.type|ro.vendor.boot.warranty_bit|ro.vendor.warranty_bit|vendor.boot.vbmeta.device_state|vendor.boot.verifiedbootstate|oplusboot.verifiedbootstate|sys.oem_unlock_allowed'"
+
+    output
+    [oplusboot.verifiedbootstate]: [green]
+    [ro.adb.secure]: [1]
+    [ro.appcompat_override.ro.boot.verifiedbootstate]: [green]
+    [ro.boot.flash.locked]: [1]
+    [ro.boot.vbmeta.device_state]: [locked]
+    [ro.boot.verifiedbootstate]: [green]
+    [ro.boot.veritymode]: [enforcing]
+    [ro.boot.warranty_bit]: [0]
+    [ro.bootimage.build.type]: [user]
+    [ro.build.keys]: [release-keys]
+    [ro.build.tags]: [release-keys]
+    [ro.build.type]: [user]
+    [ro.debuggable]: [0]
+    [ro.force.debuggable]: [0]
+    [ro.odm.build.type]: [user]
+    [ro.product.build.type]: [user]
+    [ro.secure]: [1]
+    [ro.system.build.tags]: [release-keys]
+    [ro.system.build.type]: [user]
+    [ro.system_ext.build.type]: [user]
+    [ro.vendor.boot.warranty_bit]: [0]
+    [ro.vendor.build.type]: [user]
+    [ro.vendor.warranty_bit]: [0]
+    [ro.vendor_dlkm.build.type]: [user]
+    [ro.warranty_bit]: [0]
+    [sys.oem_unlock_allowed]: [0]
+    [vendor.boot.vbmeta.device_state]: [locked]
+    [vendor.boot.verifiedbootstate]: [green]
+
+Author: minaripenguin <minaripenguin@users.noreply.github.com>
+Date:   Thu Aug 22 12:09:57 2024 +0800
+
+    init: Spoof encrytion prop as encrypted
+
+    * reference: https://github.com/RisingOS-staging/android_vendor_rising/commit/deae9373dcd0d93f09548ee5ef53a517e7cad2f4
+
+Author: Pranav Vashi <neobuddy89@gmail.com>
+Date:   Sun Oct 26 21:55:29 2025 +0530
+
+    init: Add more properties for spoof
+---
+ init/Android.bp           |  6 ++++
+ init/property_service.cpp | 74 +++++++++++++++++++++++++++++++++++++--
+ 2 files changed, 78 insertions(+), 2 deletions(-)
+
+diff --git a/init/Android.bp b/init/Android.bp
+index 3e2fb076b0..bc2ad0504b 100644
+--- a/init/Android.bp
++++ b/init/Android.bp
+@@ -130,6 +130,7 @@ libinit_cc_defaults {
+         "-DREBOOT_BOOTLOADER_ON_PANIC=0",
+         "-DSHUTDOWN_ZERO_TIMEOUT=0",
+         "-DWORLD_WRITABLE_KMSG=0",
++        "-DSPOOF_SAFETYNET=1",
+         "-Wall",
+         "-Werror",
+         "-Wextra",
+@@ -159,6 +160,8 @@ libinit_cc_defaults {
+             cppflags: [
+                 "-USHUTDOWN_ZERO_TIMEOUT",
+                 "-DSHUTDOWN_ZERO_TIMEOUT=1",
++                "-USPOOF_SAFETYNET",
++                "-DSPOOF_SAFETYNET=0",
+             ],
+         },
+         uml: {
+@@ -446,6 +449,7 @@ init_first_stage_cc_defaults {
+         "-DSHUTDOWN_ZERO_TIMEOUT=0",
+         "-DLOG_UEVENTS=0",
+         "-DSEPOLICY_VERSION=30", // TODO(jiyong): externalize the version number
++        "-DSPOOF_SAFETYNET=1",
+     ] + GLOBAL_HWASAN_OPTIONS,
+ 
+     product_variables: {
+@@ -475,6 +479,8 @@ init_first_stage_cc_defaults {
+             cflags: [
+                 "-USHUTDOWN_ZERO_TIMEOUT",
+                 "-DSHUTDOWN_ZERO_TIMEOUT=1",
++                "-USPOOF_SAFETYNET",
++                "-DSPOOF_SAFETYNET=0",
+             ],
+         },
+     },
+diff --git a/init/property_service.cpp b/init/property_service.cpp
+index 3c78e761ad..4a2602ede8 100644
+--- a/init/property_service.cpp
++++ b/init/property_service.cpp
+@@ -121,6 +121,8 @@ struct PropertyAuditData {
+     const char* name;
+ };
+ 
++static bool weaken_prop_override_security = false;
++
+ static int PropertyAuditCallback(void* data, security_class_t /*cls*/, char* buf, size_t len) {
+     auto* d = reinterpret_cast<PropertyAuditData*>(data);
+ 
+@@ -397,8 +399,8 @@ static std::optional<uint32_t> PropertySet(const std::string& name, const std::s
+     } else {
+         prop_info* pi = (prop_info*)__system_property_find(name.c_str());
+         if (pi != nullptr) {
+-            // ro.* properties are actually "write-once".
+-            if (StartsWith(name, "ro.")) {
++            // ro.* properties are actually "write-once", unless the system decides to
++            if (StartsWith(name, "ro.") && !weaken_prop_override_security) {
+                 *error = "Read-only property was already set";
+                 return {PROP_ERROR_READ_ONLY_PROPERTY};
+             }
+@@ -1114,6 +1116,58 @@ static void property_initialize_ro_vendor_api_level() {
+     }
+ }
+ 
++static void SetSafetyNetProps() {
++    std::string error;
++    uint32_t res;
++
++    const std::pair<const char*, const char*> props[] = {
++        {"ro.boot.flash.locked", "1"},
++        {"ro.boot.vbmeta.device_state", "locked"},
++        {"ro.boot.verifiedbootstate", "green"},
++        {"ro.boot.veritymode", "enforcing"},
++        {"ro.boot.warranty_bit", "0"},
++        {"ro.warranty_bit", "0"},
++        {"ro.debuggable", "0"},
++        {"ro.force.debuggable", "0"},
++        {"ro.adb.secure", "1"},
++        {"ro.secure", "1"},
++        {"ro.bootimage.build.type", "user"},
++        {"ro.build.type", "user"},
++        {"ro.build.keys", "release-keys"},
++        {"ro.build.tags", "release-keys"},
++        {"ro.system.build.tags", "release-keys"},
++        {"ro.product.build.type", "user"},
++        {"ro.odm.build.type", "user"},
++        {"ro.system.build.type", "user"},
++        {"ro.system_ext.build.type", "user"},
++        {"ro.vendor.build.type", "user"},
++        {"ro.vendor_dlkm.build.type", "user"},
++        {"ro.system_dlkm.build.type", "user"},
++        {"ro.vendor.boot.warranty_bit", "0"},
++        {"ro.vendor.warranty_bit", "0"},
++        {"vendor.boot.vbmeta.device_state", "locked"},
++        {"vendor.boot.verifiedbootstate", "green"},
++        {"oplusboot.verifiedbootstate", "green"},
++        {"sys.oem_unlock_allowed", "0"},
++        {"ro.oem_unlock_supported", "0"},
++        {"ro.crypto.state", "encrypted"},
++        {"ro.boot.flash.locked", "1"},
++        {"ro.is_ever_orange", "0"},
++        {"ro.secureboot.devicelock", "1"},
++        {"ro.secureboot.lockstate", "locked"}
++    };
++
++    for (const auto& [name, value] : props) {
++        res = PropertySetNoSocket(name, value, &error);
++        if (res == PROP_SUCCESS) {
++            LOG(INFO) << "Property '" << name << "' set successfully to '" << value << "'";
++        } else {
++            LOG(ERROR) << "Failed to set property '" << name
++                       << "' to '" << value << "': err=" << res << " (" << error << ")";
++        }
++    }
++}
++
+ void PropertyLoadBootDefaults() {
+     // We read the properties and their values into a map, in order to always allow properties
+     // loaded in the later property files to override the properties in loaded in the earlier
+@@ -1208,6 +1262,9 @@ void PropertyLoadBootDefaults() {
+         }
+     }
+ 
++    // Weaken property override security during execution of the vendor init extension
++    weaken_prop_override_security = true;
++
+     // Update with vendor-specific property runtime overrides
+     vendor_load_properties();
+ 
+@@ -1216,6 +1273,19 @@ void PropertyLoadBootDefaults() {
+     property_initialize_ro_cpu_abilist();
+     property_initialize_ro_vendor_api_level();
+ 
++    // Report a valid verified boot chain to make Google SafetyNet integrity
++    // checks pass. This needs to be done before parsing the kernel cmdline as
++    // these properties are read-only and will be set to invalid values with
++    // androidboot cmdline arguments.
++    if (SPOOF_SAFETYNET) {
++      if (!IsRecoveryMode()) {
++        SetSafetyNetProps();
++      }
++    }
++
++    // Restore the normal property override security after init extension is executed
++    weaken_prop_override_security = false;
++
+     update_sys_usb_config();
+ }
+ 
